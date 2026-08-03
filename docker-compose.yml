@@ -1,0 +1,7 @@
+services:
+  web:
+    build: .
+    container_name: drashort-web
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
