@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cachedProviderRequest } from "@/lib/provider-cache";
 import { providerFetch, type ProviderName } from "@/lib/providers";
 
 const allowedProviders = new Set<ProviderName>(["captain", "sansekai"]);
@@ -17,6 +18,22 @@ async function forward(request: NextRequest, params: Promise<{ provider: string;
   const body = method === "GET" || method === "HEAD" ? undefined : await request.text();
 
   try {
+    if (method === "GET") {
+      const result = await cachedProviderRequest(provider, upstreamPath, () =>
+        providerFetch(provider, upstreamPath, { method: "GET" }),
+      );
+
+      return new NextResponse(result.body, {
+        status: result.status,
+        headers: {
+          "content-type": result.contentType,
+          "cache-control": `public, max-age=60, s-maxage=${result.ttlSeconds}, stale-while-revalidate=300`,
+          "x-dracin-cache": result.cacheStatus,
+          "x-dracin-provider": provider,
+        },
+      });
+    }
+
     const response = await providerFetch(provider, upstreamPath, {
       method,
       body,
@@ -33,6 +50,8 @@ async function forward(request: NextRequest, params: Promise<{ provider: string;
       headers: {
         "content-type": contentType,
         "cache-control": "no-store",
+        "x-dracin-cache": "BYPASS",
+        "x-dracin-provider": provider,
       },
     });
   } catch (error) {
