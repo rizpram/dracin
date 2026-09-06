@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AdSlot } from "@/components/Monetization";
 import { getDrama } from "@/lib/dramas";
 
 export default async function DramaDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +25,8 @@ export default async function DramaDetailPage({ params }: { params: Promise<{ id
             <Link className="primary-action wide" href={`/watch/${drama.id}/1`}>▶ Mulai Episode 1</Link>
           </div>
         </section>
+
+        <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_DETAIL_SLOT} />
 
         <section className="episode-sheet">
           <div className="section-title-row">
