@@ -16,17 +16,27 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
   const next = drama.episodes.find((item) => item.number === episodeNumber + 1);
 
   return (
-    <main className="shell">
-      <div className="container">
-        <Link className="back" href={`/drama/${drama.id}`}>← {drama.title}</Link>
-        <div className="player-wrap">
-          <div className="player"><HlsPlayer src={current.streamUrl} /></div>
-          <div className="section-head"><div><div className="eyebrow">Episode {current.number}</div><h2>{drama.title}</h2></div></div>
-          <div className="cta-row">
-            {prev ? <Link className="btn secondary" href={`/watch/${drama.id}/${prev.number}`}>← Sebelumnya</Link> : null}
-            {next ? <Link className="btn" href={`/watch/${drama.id}/${next.number}`}>Berikutnya →</Link> : <Link className="btn" href={`/drama/${drama.id}`}>Selesai</Link>}
+    <main className="watch-shell">
+      <div className="watch-frame">
+        <div className="watch-player-stage">
+          <HlsPlayer src={current.streamUrl} poster={drama.cover} />
+          <Link className="watch-back" href={`/drama/${drama.id}`}>←</Link>
+          <div className="watch-top-meta">
+            <strong>{drama.title}</strong>
+            <span>Episode {current.number} / {drama.episodes.length}</span>
           </div>
         </div>
+
+        <section className="watch-controls">
+          <div className="watch-copy">
+            <span className="kicker">Episode {current.number}</span>
+            <h1>{drama.title}</h1>
+          </div>
+          <div className="episode-nav-row">
+            {prev ? <Link className="episode-nav secondary" href={`/watch/${drama.id}/${prev.number}`}>← EP {prev.number}</Link> : <span />}
+            {next ? <Link className="episode-nav primary" href={`/watch/${drama.id}/${next.number}`}>EP {next.number} →</Link> : <Link className="episode-nav primary" href={`/drama/${drama.id}`}>Selesai</Link>}
+          </div>
+        </section>
       </div>
     </main>
   );
