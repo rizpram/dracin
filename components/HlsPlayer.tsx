@@ -3,7 +3,7 @@
 import Hls from "hls.js";
 import { useEffect, useRef } from "react";
 
-export default function HlsPlayer({ src }: { src: string }) {
+export default function HlsPlayer({ src, poster }: { src: string; poster?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -16,12 +16,25 @@ export default function HlsPlayer({ src }: { src: string }) {
     }
 
     if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+      });
       hls.loadSource(src);
       hls.attachMedia(video);
       return () => hls.destroy();
     }
   }, [src]);
 
-  return <video ref={videoRef} controls playsInline preload="metadata" />;
+  return (
+    <video
+      ref={videoRef}
+      controls
+      playsInline
+      preload="metadata"
+      poster={poster}
+      className="vertical-video"
+    />
+  );
 }
