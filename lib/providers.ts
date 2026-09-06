@@ -17,7 +17,7 @@ export function getProviderConfig(name: ProviderName): ProviderConfig {
 
   return {
     name,
-    baseUrl: process.env.SANSEKAI_API_URL || "https://api.sansekai.my.id",
+    baseUrl: process.env.SANSEKAI_API_URL || "https://api.sansekai.my.id/api",
   };
 }
 
@@ -29,9 +29,6 @@ export async function providerFetch(name: ProviderName, path: string, init?: Req
 
   if (provider.token) {
     headers.set("Authorization", `Bearer ${provider.token}`);
-    // Captain's documentation UI now authenticates via an auth_token cookie.
-    // Supplying both methods server-side keeps the API token out of the browser
-    // while allowing DRACIN to introspect authenticated docs when routes move.
     if (name === "captain") headers.set("Cookie", `auth_token=${encodeURIComponent(provider.token)}`);
   }
 

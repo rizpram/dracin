@@ -1,20 +1,22 @@
 import Link from "next/link";
 import { AdSlot, SupportButton } from "@/components/Monetization";
 import { getDramas } from "@/lib/dramas";
-import { CAPTAIN_PROVIDERS, providerSlug } from "@/lib/captain-multi";
+import { PROVIDER_DIRECTORY } from "@/lib/provider-directory";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const dramas = await getDramas();
   const featured = dramas[0];
+  const captainCount = PROVIDER_DIRECTORY.filter((p)=>p.source==="captain").length;
+  const sansekaiCount = PROVIDER_DIRECTORY.filter((p)=>p.source==="sansekai").length;
 
   return (
     <main className="app-shell">
       <div className="mobile-frame">
         <header className="mobile-topbar">
           <div className="brand">DRA<span>CIN</span></div>
-          <Link href="/api/health" className="status-pill">LIVE</Link>
+          <Link href="/audit" className="status-pill">LIVE</Link>
         </header>
 
         {featured ? (
@@ -33,24 +35,20 @@ export default async function HomePage() {
         ) : (
           <section className="mobile-hero">
             <div className="mobile-hero-overlay" />
-            <div className="mobile-hero-content">
-              <span className="kicker">DRACIN LIVE</span>
-              <h1>Katalog sedang dimuat</h1>
-              <p>Belum ada data dari provider. Cek status API atau konfigurasi Captain.</p>
-              <div className="hero-actions"><Link className="ghost-action" href="/api/health">Cek API</Link></div>
-            </div>
+            <div className="mobile-hero-content"><span className="kicker">DRACIN LIVE</span><h1>Katalog sedang dimuat</h1><p>Belum ada data dari provider.</p></div>
           </section>
         )}
 
         <section className="home-section" id="providers">
           <div className="section-title-row">
-            <div><span className="kicker">Captain API</span><h2>Semua Provider</h2></div>
-            <span>{CAPTAIN_PROVIDERS.length} aktif</span>
+            <div><span className="kicker">Multi Source</span><h2>Pilih Provider</h2></div>
+            <span>{captainCount} Captain · {sansekaiCount} fallback</span>
           </div>
-          <div className="provider-scroll">
-            {CAPTAIN_PROVIDERS.map((provider) => (
-              <Link className="provider-chip" href={`/provider/${providerSlug(provider)}`} key={provider}>
-                <span className="provider-dot" />{provider}
+          <div className="provider-grid">
+            {PROVIDER_DIRECTORY.map((provider) => (
+              <Link className="provider-card" href={`/provider/${provider.slug}`} key={provider.slug}>
+                <div><span className={`source-dot ${provider.source}`} /><strong>{provider.name}</strong></div>
+                <small>{provider.source === "captain" ? "Captain" : "Sansekai fallback"}</small>
               </Link>
             ))}
           </div>
@@ -64,9 +62,7 @@ export default async function HomePage() {
             <div className="portrait-grid">
               {dramas.map((drama) => (
                 <Link href={`/drama/${drama.id}`} className="portrait-card" key={drama.id}>
-                  <div className="portrait-poster" style={{ backgroundImage: `url(${drama.cover})` }}>
-                    <span className="episode-badge">{drama.episodes.length ? `${drama.episodes.length} EP` : (drama.providerName || "DRAMA")}</span>
-                  </div>
+                  <div className="portrait-poster" style={{ backgroundImage: `url(${drama.cover})` }}><span className="episode-badge">{drama.episodes.length ? `${drama.episodes.length} EP` : (drama.providerName || "DRAMA")}</span></div>
                   <h3>{drama.title}</h3><p>{drama.genre}</p>
                 </Link>
               ))}
@@ -79,7 +75,7 @@ export default async function HomePage() {
           <Link className="active" href="/">⌂<span>Home</span></Link>
           <Link href="/#providers">▦<span>Provider</span></Link>
           <Link href="/#popular">⌕<span>Discover</span></Link>
-          <Link href="/">◉<span>Profile</span></Link>
+          <Link href="/audit">✓<span>Audit</span></Link>
         </nav>
       </div>
     </main>
