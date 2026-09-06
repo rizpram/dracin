@@ -1,7 +1,7 @@
 import Script from "next/script";
 
 const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
-const saweriaUrl = process.env.NEXT_PUBLIC_SAWERIA_URL;
+const saweriaUrl = process.env.NEXT_PUBLIC_SAWERIA_QR_URL || process.env.NEXT_PUBLIC_SAWERIA_URL;
 
 export function MonetizationScripts() {
   if (!adsenseClient) return null;
@@ -37,7 +37,7 @@ export function AdSlot({ slot, format = "auto" }: { slot?: string; format?: stri
 export function SupportButton() {
   if (!saweriaUrl) return null;
   return (
-    <a className="support-fab" href={saweriaUrl} target="_blank" rel="noopener noreferrer" aria-label="Dukung DRACIN via Saweria">
+    <a className="support-fab" href={saweriaUrl} target="_blank" rel="noopener noreferrer" aria-label="Dukung DRACIN via Saweria QR">
       ❤ <span>Saweria</span>
     </a>
   );
