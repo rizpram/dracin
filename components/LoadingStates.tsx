@@ -1,0 +1,2 @@
+export function SkeletonGrid(){return <div className="premium-grid" aria-label="Memuat konten">{Array.from({length:6}).map((_,i)=><div className="premium-drama-card" key={i}><div className="premium-poster skeleton"/><div className="skeleton-line"/><div className="skeleton-line short"/></div>)}</div>}
+export function ErrorState({message="Konten gagal dimuat."}:{message?:string}){return <div className="premium-empty"><b>!</b><h2>Terjadi gangguan</h2><p>{message}</p><a className="ghost-action" href="">Coba Lagi</a></div>}
