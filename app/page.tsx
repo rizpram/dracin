@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdSlot, SupportButton } from "@/components/Monetization";
 import { getDramas } from "@/lib/dramas";
 
 export default async function HomePage() {
@@ -26,7 +27,9 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="home-section">
+        <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_HOME_SLOT} />
+
+        <section className="home-section" id="popular">
           <div className="section-title-row">
             <h2>Drama Populer</h2>
             <span>{dramas.length} judul</span>
@@ -44,6 +47,7 @@ export default async function HomePage() {
           </div>
         </section>
 
+        <SupportButton />
         <nav className="mobile-nav">
           <Link className="active" href="/">⌂<span>Home</span></Link>
           <Link href="/#popular">⌕<span>Discover</span></Link>
