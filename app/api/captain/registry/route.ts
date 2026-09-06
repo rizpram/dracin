@@ -4,7 +4,7 @@ import { providerFetch } from "@/lib/providers";
 type JsonRecord = Record<string, any>;
 
 const JSON_CANDIDATES = ["/openapi.json", "/swagger.json", "/swagger/v1/swagger.json", "/api-docs"];
-const UNSAFE = /(unlock|bypass|decrypt|drm|paywall)/i;
+const UNSAFE = /(unlock|bypass|decrypt|decrypted|terdekripsi|drm|paywall|premium|\bvip\b|berbayar|locked\s*content)/i;
 
 function embeddedSpec(html: string): JsonRecord | null {
   for (const marker of ["openapi", "swagger"]) {
