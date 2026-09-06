@@ -11,7 +11,7 @@ export type Episode = {
 export type Drama = {
   id: string;
   source: "captain";
-  provider: "flickshort";
+  provider: "freereels";
   sourceId: string;
   title: string;
   synopsis: string;
@@ -24,7 +24,8 @@ export type Drama = {
 type JsonRecord = Record<string, unknown>;
 
 const PLACEHOLDER_POSTER = "https://placehold.co/720x1280/111111/eeeeee?text=DRACIN";
-const FEED_PATH = "/flickshort/api/v1/recommend?page=1&limit=30&lang=id&origin=auto";
+const LANGUAGE = "id-ID";
+const FEED_PATH = `/freereels/api/v1/foryou?page=1&lang=${LANGUAGE}`;
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -54,7 +55,7 @@ function stringList(value: unknown): string[] {
   return value.flatMap((item) => {
     if (typeof item === "string") return item;
     if (isRecord(item)) {
-      const label = text(item, ["name", "title", "label", "genre"]);
+      const label = text(item, ["name", "title", "label", "genre", "tag_name", "tagName"]);
       return label ? [label] : [];
     }
     return [];
@@ -62,8 +63,24 @@ function stringList(value: unknown): string[] {
 }
 
 function firstImage(record: JsonRecord): string {
-  const direct = text(record, ["cover", "cover_url", "coverUrl", "poster", "poster_url", "posterUrl", "image", "image_url", "imageUrl", "img", "bookCover", "book_cover", "thumb", "thumbnail"]);
+  const direct = text(record, [
+    "cover",
+    "cover_url",
+    "coverUrl",
+    "poster",
+    "poster_url",
+    "posterUrl",
+    "image",
+    "image_url",
+    "imageUrl",
+    "img",
+    "bookCover",
+    "book_cover",
+    "thumb",
+    "thumbnail",
+  ]);
   if (/^https?:\/\//i.test(direct)) return direct;
+
   for (const value of Object.values(record)) {
     if (isRecord(value)) {
       const nested = firstImage(value);
@@ -74,22 +91,59 @@ function firstImage(record: JsonRecord): string {
 }
 
 function rawDramaId(record: JsonRecord): string {
-  return text(record, ["id", "drama_id", "dramaId", "book_id", "bookId", "playlet_id", "playletId", "series_id", "seriesId"]);
+  return text(record, [
+    "id",
+    "drama_id",
+    "dramaId",
+    "book_id",
+    "bookId",
+    "playlet_id",
+    "playletId",
+    "series_id",
+    "seriesId",
+    "short_play_id",
+    "shortPlayId",
+  ]);
 }
 
 function rawTitle(record: JsonRecord): string {
-  return text(record, ["title", "name", "drama_name", "dramaName", "book_name", "bookName", "series_name", "seriesName"]);
+  return text(record, [
+    "title",
+    "name",
+    "drama_name",
+    "dramaName",
+    "book_name",
+    "bookName",
+    "series_name",
+    "seriesName",
+    "short_play_name",
+    "shortPlayName",
+  ]);
 }
 
 function findDramaObjects(value: unknown, depth = 0): JsonRecord[] {
-  if (depth > 7) return [];
+  if (depth > 8) return [];
+
   if (Array.isArray(value)) {
     const direct = value.filter(isRecord).filter((item) => rawDramaId(item) && rawTitle(item));
     if (direct.length) return direct;
     return value.flatMap((item) => findDramaObjects(item, depth + 1));
   }
+
   if (isRecord(value)) {
-    for (const key of ["data", "list", "items", "dramas", "books", "results", "recommend", "recommendations", "records"]) {
+    for (const key of [
+      "data",
+      "list",
+      "items",
+      "dramas",
+      "books",
+      "results",
+      "recommend",
+      "recommendations",
+      "records",
+      "content",
+      "rows",
+    ]) {
       if (key in value) {
         const found = findDramaObjects(value[key], depth + 1);
         if (found.length) return found;
@@ -97,44 +151,100 @@ function findDramaObjects(value: unknown, depth = 0): JsonRecord[] {
     }
     return Object.values(value).flatMap((item) => findDramaObjects(item, depth + 1));
   }
+
   return [];
 }
 
-function findDetailObject(value: unknown): JsonRecord | null {
+function findDetailObject(value: unknown, depth = 0): JsonRecord | null {
+  if (depth > 8) return null;
   if (isRecord(value)) {
     if (rawDramaId(value) || rawTitle(value)) return value;
-    for (const key of ["data", "detail", "drama", "book", "result"]) {
+    for (const key of ["data", "detail", "drama", "book", "result", "content"]) {
       const child = value[key];
       if (isRecord(child)) {
-        const found = findDetailObject(child);
+        const found = findDetailObject(child, depth + 1);
         if (found) return found;
       }
+    }
+    for (const child of Object.values(value)) {
+      const found = findDetailObject(child, depth + 1);
+      if (found) return found;
     }
   }
   return null;
 }
 
-function episodeArray(record: JsonRecord): JsonRecord[] {
-  for (const key of ["episodes", "episode_list", "episodeList", "chapters", "chapter_list", "chapterList", "video_list", "videoList"]) {
-    const value = record[key];
-    if (Array.isArray(value)) return value.filter(isRecord);
-    if (isRecord(value)) {
-      const nested = Object.values(value).find(Array.isArray);
-      if (Array.isArray(nested)) return nested.filter(isRecord);
-    }
+function episodeArray(value: unknown, depth = 0): JsonRecord[] {
+  if (depth > 8) return [];
+
+  if (Array.isArray(value)) {
+    const records = value.filter(isRecord);
+    const episodeLike = records.filter((item) =>
+      Boolean(
+        numberValue(item, [
+          "episode",
+          "episode_no",
+          "episodeNo",
+          "ep",
+          "ep_num",
+          "epNum",
+          "chapter_num",
+          "chapterNum",
+          "index",
+          "sort",
+          "episode_index",
+          "episodeIndex",
+        ]) || text(item, ["episode_id", "episodeId", "chapter_id", "chapterId", "video_id", "videoId"]),
+      ),
+    );
+    if (episodeLike.length) return episodeLike;
+    return value.flatMap((item) => episodeArray(item, depth + 1));
   }
-  for (const value of Object.values(record)) {
-    if (isRecord(value)) {
-      const found = episodeArray(value);
-      if (found.length) return found;
+
+  if (isRecord(value)) {
+    for (const key of [
+      "episodes",
+      "episode_list",
+      "episodeList",
+      "chapters",
+      "chapter_list",
+      "chapterList",
+      "video_list",
+      "videoList",
+      "list",
+      "items",
+      "data",
+      "content",
+    ]) {
+      if (key in value) {
+        const found = episodeArray(value[key], depth + 1);
+        if (found.length) return found;
+      }
     }
+    return Object.values(value).flatMap((item) => episodeArray(item, depth + 1));
   }
+
   return [];
 }
 
 function normalizeEpisode(item: JsonRecord, index: number): Episode {
-  const number = numberValue(item, ["episode", "episode_no", "episodeNo", "ep", "ep_num", "epNum", "chapter_num", "chapterNum", "index", "sort"]) || index + 1;
+  const number =
+    numberValue(item, [
+      "episode",
+      "episode_no",
+      "episodeNo",
+      "ep",
+      "ep_num",
+      "epNum",
+      "chapter_num",
+      "chapterNum",
+      "index",
+      "sort",
+      "episode_index",
+      "episodeIndex",
+    ]) || index + 1;
   const sourceId = text(item, ["id", "episode_id", "episodeId", "chapter_id", "chapterId", "video_id", "videoId"]);
+
   return {
     id: sourceId || `ep-${number}`,
     sourceId: sourceId || String(number),
@@ -144,24 +254,21 @@ function normalizeEpisode(item: JsonRecord, index: number): Episode {
   };
 }
 
-function normalizeDrama(item: JsonRecord, detailed = false): Drama | null {
+function normalizeDrama(item: JsonRecord, episodes: Episode[] = []): Drama | null {
   const sourceId = rawDramaId(item);
   const title = rawTitle(item);
   if (!sourceId || !title) return null;
-  const genres = ["genres", "genre", "tags", "categories"].flatMap((key) => stringList(item[key]));
+
+  const genres = ["genres", "genre", "tags", "categories", "tag_list", "tagList"].flatMap((key) => stringList(item[key]));
   const cover = firstImage(item);
-  let episodes = detailed ? episodeArray(item).map(normalizeEpisode).sort((a, b) => a.number - b.number) : [];
-  if (detailed && episodes.length === 0) {
-    const total = numberValue(item, ["episode_count", "episodeCount", "total_episode", "totalEpisode", "total_episodes", "totalEpisodes", "chapter_count", "chapterCount"]);
-    if (total > 0 && total <= 500) episodes = Array.from({ length: total }, (_, i) => ({ id: `ep-${i + 1}`, sourceId: String(i + 1), number: i + 1, title: `Episode ${i + 1}` }));
-  }
+
   return {
-    id: `flickshort--${sourceId}`,
+    id: `freereels--${sourceId}`,
     source: "captain",
-    provider: "flickshort",
+    provider: "freereels",
     sourceId,
     title,
-    synopsis: text(item, ["synopsis", "description", "desc", "intro", "summary", "abstract"]) || "Sinopsis belum tersedia.",
+    synopsis: text(item, ["synopsis", "description", "desc", "intro", "summary", "abstract", "introduction"]) || "Sinopsis belum tersedia.",
     genre: genres.slice(0, 3).join(" • ") || "Drama",
     cover,
     backdrop: text(item, ["backdrop", "banner", "background", "background_url", "backgroundUrl"]) || cover,
@@ -179,37 +286,72 @@ export async function getDramas(): Promise<Drama[]> {
   try {
     const payload = await captainJson(FEED_PATH);
     const seen = new Set<string>();
+
     return findDramaObjects(payload)
       .map((item) => normalizeDrama(item))
       .filter((item): item is Drama => Boolean(item))
       .filter((item) => !seen.has(item.id) && Boolean(seen.add(item.id)))
       .slice(0, 30);
   } catch (error) {
-    console.error("DRACIN real catalog failed", error);
+    console.error("DRACIN FreeReels catalog failed", error);
     return [];
   }
 }
 
 export async function getDrama(id: string): Promise<Drama | null> {
-  if (!id.startsWith("flickshort--")) return null;
-  const sourceId = id.slice("flickshort--".length);
+  if (!id.startsWith("freereels--")) return null;
+  const sourceId = id.slice("freereels--".length);
   if (!sourceId) return null;
+
   try {
-    const payload = await captainJson(`/flickshort/api/v1/drama/${encodeURIComponent(sourceId)}?lang=id`);
-    const record = findDetailObject(payload);
-    return record ? normalizeDrama({ ...record, id: rawDramaId(record) || sourceId }, true) : null;
+    const encodedId = encodeURIComponent(sourceId);
+    const [detailPayload, episodesPayload] = await Promise.all([
+      captainJson(`/freereels/api/v1/dramas/${encodedId}?lang=${LANGUAGE}`),
+      captainJson(`/freereels/api/v1/dramas/${encodedId}/episodes?lang=${LANGUAGE}`),
+    ]);
+
+    const record = findDetailObject(detailPayload);
+    if (!record) return null;
+
+    let episodes = episodeArray(episodesPayload).map(normalizeEpisode).sort((a, b) => a.number - b.number);
+
+    if (episodes.length === 0) {
+      const total = numberValue(record, [
+        "episode_count",
+        "episodeCount",
+        "total_episode",
+        "totalEpisode",
+        "total_episodes",
+        "totalEpisodes",
+        "chapter_count",
+        "chapterCount",
+      ]);
+      if (total > 0 && total <= 500) {
+        episodes = Array.from({ length: total }, (_, i) => ({
+          id: `ep-${i + 1}`,
+          sourceId: String(i + 1),
+          number: i + 1,
+          title: `Episode ${i + 1}`,
+        }));
+      }
+    }
+
+    return normalizeDrama({ ...record, id: rawDramaId(record) || sourceId }, episodes);
   } catch (error) {
-    console.error(`DRACIN detail failed for ${sourceId}`, error);
+    console.error(`DRACIN FreeReels detail failed for ${sourceId}`, error);
     return null;
   }
 }
 
 export function extractStreamUrl(value: unknown, depth = 0): string {
-  if (depth > 8) return "";
+  if (depth > 9) return "";
+
   if (typeof value === "string") {
     if (/^https?:\/\/[^\s]+\.(m3u8|mp4)(\?|$)/i.test(value)) return value;
+    if (/^https?:\/\//i.test(value) && /(m3u8|mp4|video|stream|play)/i.test(value)) return value;
     return "";
   }
+
   if (Array.isArray(value)) {
     for (const item of value) {
       const found = extractStreamUrl(item, depth + 1);
@@ -217,8 +359,23 @@ export function extractStreamUrl(value: unknown, depth = 0): string {
     }
     return "";
   }
+
   if (isRecord(value)) {
-    for (const key of ["m3u8", "m3u8_url", "m3u8Url", "video_url", "videoUrl", "play_url", "playUrl", "stream_url", "streamUrl", "url"]) {
+    for (const key of [
+      "m3u8",
+      "m3u8_url",
+      "m3u8Url",
+      "video_url",
+      "videoUrl",
+      "play_url",
+      "playUrl",
+      "stream_url",
+      "streamUrl",
+      "url",
+      "src",
+      "playAddress",
+      "play_address",
+    ]) {
       const found = extractStreamUrl(value[key], depth + 1);
       if (found) return found;
     }
@@ -227,17 +384,21 @@ export function extractStreamUrl(value: unknown, depth = 0): string {
       if (found) return found;
     }
   }
+
   return "";
 }
 
 export async function getEpisodeStream(drama: Drama, episodeNumber: number): Promise<string | null> {
   const embedded = drama.episodes.find((ep) => ep.number === episodeNumber)?.streamUrl;
   if (embedded) return embedded;
+
   try {
-    const payload = await captainJson(`/flickshort/api/v1/drama/${encodeURIComponent(drama.sourceId)}/episode/${episodeNumber}?lang=id`);
+    const payload = await captainJson(
+      `/freereels/api/v1/dramas/${encodeURIComponent(drama.sourceId)}/play/${episodeNumber}?lang=${LANGUAGE}`,
+    );
     return extractStreamUrl(payload) || null;
   } catch (error) {
-    console.error(`DRACIN stream failed for ${drama.sourceId} ep ${episodeNumber}`, error);
+    console.error(`DRACIN FreeReels stream failed for ${drama.sourceId} ep ${episodeNumber}`, error);
     return null;
   }
 }
