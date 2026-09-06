@@ -8,31 +8,37 @@ export default async function DramaDetailPage({ params }: { params: Promise<{ id
   if (!drama) notFound();
 
   return (
-    <main className="shell">
-      <div className="container">
-        <Link className="back" href="/">← Kembali</Link>
-        <section className="detail-hero">
-          <div className="detail-cover" style={{ backgroundImage: `url(${drama.cover})` }} />
-          <div className="detail-copy">
-            <span className="tag">{drama.genre}</span>
+    <main className="app-shell">
+      <div className="mobile-frame detail-screen">
+        <section className="detail-cover-mobile" style={{ backgroundImage: `url(${drama.cover})` }}>
+          <div className="detail-shade" />
+          <Link className="floating-back" href="/">←</Link>
+          <div className="detail-mobile-copy">
+            <span className="kicker">{drama.genre}</span>
             <h1>{drama.title}</h1>
-            <p className="muted">{drama.synopsis}</p>
-            <div className="cta-row">
-              <Link className="btn" href={`/watch/${drama.id}/1`}>▶ Episode 1</Link>
-              <span className="btn secondary">{drama.episodes.length} Episode</span>
+            <p>{drama.synopsis}</p>
+            <div className="detail-meta">
+              <span>{drama.episodes.length} Episode</span>
+              <span>9:16 Vertical</span>
             </div>
+            <Link className="primary-action wide" href={`/watch/${drama.id}/1`}>▶ Mulai Episode 1</Link>
           </div>
         </section>
 
-        <div className="section-head"><h2>Episode</h2><span className="muted">Tonton berurutan</span></div>
-        <div className="episode-list">
-          {drama.episodes.map((episode) => (
-            <Link className="episode" key={episode.id} href={`/watch/${drama.id}/${episode.number}`}>
-              <div><strong>{episode.title}</strong><small>{drama.title}</small></div>
-              <span>▶</span>
-            </Link>
-          ))}
-        </div>
+        <section className="episode-sheet">
+          <div className="section-title-row">
+            <h2>Daftar Episode</h2>
+            <span>Tap untuk nonton</span>
+          </div>
+          <div className="episode-grid-mobile">
+            {drama.episodes.map((episode) => (
+              <Link className="episode-tile" key={episode.id} href={`/watch/${drama.id}/${episode.number}`}>
+                <strong>{episode.number}</strong>
+                <span>Episode {episode.number}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
