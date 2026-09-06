@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import HlsPlayer from "@/components/HlsPlayer";
-import { getDrama } from "@/lib/dramas";
+import { getDrama, getEpisodeStream } from "@/lib/dramas";
 
 export default async function WatchPage({ params }: { params: Promise<{ id: string; episode: string }> }) {
   const { id, episode } = await params;
@@ -12,6 +12,9 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
   const current = drama.episodes.find((item) => item.number === episodeNumber);
   if (!current) notFound();
 
+  const streamUrl = await getEpisodeStream(drama, episodeNumber);
+  if (!streamUrl) notFound();
+
   const prev = drama.episodes.find((item) => item.number === episodeNumber - 1);
   const next = drama.episodes.find((item) => item.number === episodeNumber + 1);
 
@@ -19,7 +22,7 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
     <main className="watch-shell">
       <div className="watch-frame">
         <div className="watch-player-stage">
-          <HlsPlayer src={current.streamUrl} poster={drama.cover} />
+          <HlsPlayer src={streamUrl} poster={drama.cover} />
           <Link className="watch-back" href={`/drama/${drama.id}`}>←</Link>
           <div className="watch-top-meta">
             <strong>{drama.title}</strong>

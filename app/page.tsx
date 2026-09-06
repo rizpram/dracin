@@ -14,18 +14,32 @@ export default async function HomePage() {
           <Link href="/api/health" className="status-pill">LIVE</Link>
         </header>
 
-        <section className="mobile-hero" style={{ backgroundImage: `url(${featured.cover})` }}>
-          <div className="mobile-hero-overlay" />
-          <div className="mobile-hero-content">
-            <span className="kicker">Pilihan Hari Ini</span>
-            <h1>{featured.title}</h1>
-            <p>{featured.synopsis}</p>
-            <div className="hero-actions">
-              <Link className="primary-action" href={`/watch/${featured.id}/1`}>▶ Tonton Sekarang</Link>
-              <Link className="ghost-action" href={`/drama/${featured.id}`}>Detail</Link>
+        {featured ? (
+          <section className="mobile-hero" style={{ backgroundImage: `url(${featured.cover})` }}>
+            <div className="mobile-hero-overlay" />
+            <div className="mobile-hero-content">
+              <span className="kicker">Pilihan Hari Ini</span>
+              <h1>{featured.title}</h1>
+              <p>{featured.synopsis}</p>
+              <div className="hero-actions">
+                <Link className="primary-action" href={`/watch/${featured.id}/1`}>▶ Tonton Sekarang</Link>
+                <Link className="ghost-action" href={`/drama/${featured.id}`}>Detail</Link>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : (
+          <section className="mobile-hero">
+            <div className="mobile-hero-overlay" />
+            <div className="mobile-hero-content">
+              <span className="kicker">DRACIN LIVE</span>
+              <h1>Katalog sedang dimuat</h1>
+              <p>Belum ada data dari provider. Cek status API atau konfigurasi Captain.</p>
+              <div className="hero-actions">
+                <Link className="ghost-action" href="/api/health">Cek API</Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_HOME_SLOT} />
 
@@ -34,17 +48,21 @@ export default async function HomePage() {
             <h2>Drama Populer</h2>
             <span>{dramas.length} judul</span>
           </div>
-          <div className="portrait-grid">
-            {dramas.map((drama) => (
-              <Link href={`/drama/${drama.id}`} className="portrait-card" key={drama.id}>
-                <div className="portrait-poster" style={{ backgroundImage: `url(${drama.cover})` }}>
-                  <span className="episode-badge">{drama.episodes.length} EP</span>
-                </div>
-                <h3>{drama.title}</h3>
-                <p>{drama.genre}</p>
-              </Link>
-            ))}
-          </div>
+          {dramas.length ? (
+            <div className="portrait-grid">
+              {dramas.map((drama) => (
+                <Link href={`/drama/${drama.id}`} className="portrait-card" key={drama.id}>
+                  <div className="portrait-poster" style={{ backgroundImage: `url(${drama.cover})` }}>
+                    <span className="episode-badge">{drama.episodes.length ? `${drama.episodes.length} EP` : "DRAMA"}</span>
+                  </div>
+                  <h3>{drama.title}</h3>
+                  <p>{drama.genre}</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p>Belum ada katalog dari provider.</p>
+          )}
         </section>
 
         <SupportButton />
