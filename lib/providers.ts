@@ -23,6 +23,7 @@ export function getProviderConfig(name: ProviderName): ProviderConfig {
 
 export async function providerFetch(name: ProviderName, path: string, init?: RequestInit) {
   const provider = getProviderConfig(name);
+  const endpoint = `${provider.baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = new Headers(init?.headers);
   headers.set("User-Agent", "Mozilla/5.0 DRACIN/1.0");
   headers.set("Accept", "application/json, text/plain, text/html, */*");
@@ -35,13 +36,17 @@ export async function providerFetch(name: ProviderName, path: string, init?: Req
   const timeoutSignal = AbortSignal.timeout(10_000);
   const signal = init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
 
+  console.log("[DRACIN]", "provider-request", { provider: name, endpoint });
+
   try {
-    return await fetch(`${provider.baseUrl}${path.startsWith("/") ? path : `/${path}`}`, {
+    const response = await fetch(endpoint, {
       ...init,
       headers,
       signal,
       cache: "no-store",
     });
+    console.log("[DRACIN]", "provider-response", { provider: name, endpoint, status: response.status });
+    return response;
   } catch (error) {
     if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
       throw new Error(`Provider ${name} terlalu lama merespons. Silakan coba lagi.`);
