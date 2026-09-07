@@ -24,28 +24,24 @@ function envSeconds(name: string, fallback: number) {
 export function resolveProviderTtl(path: string) {
   const clean = path.toLowerCase();
 
-  // Stream/play URLs can expire, so keep these short.
   if (/stream|play|video|unlock|m3u8|episode\/play/.test(clean)) {
     return envSeconds("DRACIN_CACHE_STREAM_SECONDS", 180);
   }
 
-  // Episode metadata changes rarely.
   if (/episode|episodes|chapter|chapters/.test(clean)) {
     return envSeconds("DRACIN_CACHE_EPISODES_SECONDS", 3600);
   }
 
-  // Detail pages are stable enough to cache for a while.
   if (/detail|info|subject|book|drama/.test(clean)) {
     return envSeconds("DRACIN_CACHE_DETAIL_SECONDS", 1800);
   }
 
-  // Search should feel fresh but still avoid repeated upstream hits.
-  if (/search|query/.test(clean)) {
-    return envSeconds("DRACIN_CACHE_SEARCH_SECONDS", 600);
+  // Search/explore/catalog requests use the requested 5-minute TTL.
+  if (/search|query|explore|catalog|for.?you|feed|home|rank|recommend|popular|trending/.test(clean)) {
+    return envSeconds("DRACIN_CACHE_SEARCH_SECONDS", 300);
   }
 
-  // Home feeds / rankings / recommendations are shared by many users.
-  return envSeconds("DRACIN_CACHE_FEED_SECONDS", 900);
+  return envSeconds("DRACIN_CACHE_FEED_SECONDS", 300);
 }
 
 export async function cachedProviderRequest(
@@ -81,11 +77,9 @@ export async function cachedProviderRequest(
         staleUntil: Date.now() + (ttlSeconds + staleSeconds) * 1000,
       };
 
-      // Cache only successful GET responses. Rate-limit/error bodies should not poison cache.
       if (response.ok && ttlSeconds > 0) cache.set(key, entry);
       return entry;
     } catch (error) {
-      // If upstream is temporarily down/rate-limited, old data is better than failing mobile UX.
       if (existing && existing.staleUntil > Date.now()) return existing;
       throw error;
     } finally {
