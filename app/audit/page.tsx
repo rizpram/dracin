@@ -1,18 +1,28 @@
 import Link from "next/link";
 import { PROVIDER_DIRECTORY } from "@/lib/provider-directory";
+import { AuditCheck } from "@/components/AuditCheck";
+import { TopBar } from "@/components/AppChrome";
 
 export default function AuditPage(){
-  return <main className="app-shell"><div className="mobile-frame audit-page">
-    <header className="mobile-topbar"><Link href="/" className="back-link">‹</Link><div className="brand">AUDIT</div><span className="status-pill">LIVE</span></header>
-    <section className="home-section provider-page">
-      <div className="provider-heading"><span className="kicker">Health Check</span><h1>Provider Audit</h1><p>Tap satu provider untuk cek katalog, detail, episode, dan safe playback secara live. Audit dibuat per-provider supaya tidak membanjiri Captain dan tidak menabrak limit Sansekai 10 request/menit.</p></div>
+  return <main className="app-shell premium-shell"><div className="mobile-frame premium-frame audit-page">
+    <TopBar title="Provider Audit" />
+    <section className="search-hero">
+      <span className="eyebrow">Developer Tools</span>
+      <h1>Audit provider</h1>
+      <p>Provider page dicek terpisah dari capability API. Tombol Cek live menampilkan Katalog, Detail, Episode, dan Safe Play tanpa membuka JSON mentah.</p>
+    </section>
+    <section className="home-section premium-section">
+      <div className="audit-legend"><span>K = Katalog</span><span>D = Detail</span><span>E = Episode</span><span>P = Play aman</span></div>
       <div className="audit-list">
-        {PROVIDER_DIRECTORY.map((p)=><div className="audit-row" key={p.slug}>
-          <div><span className={`source-dot ${p.source}`} /><strong>{p.name}</strong><small>{p.source === "captain" ? "Captain primary" : "Sansekai fallback"}</small></div>
-          <div className="audit-actions"><Link href={`/provider/${p.slug}`}>Buka</Link><Link href={`/api/audit/provider?slug=${p.slug}`}>Audit live</Link></div>
-        </div>)}
+        {PROVIDER_DIRECTORY.map((p)=><article className="audit-row audit-row-v2" key={p.slug}>
+          <div className="audit-provider-copy"><span className={`source-dot ${p.source}`} /><strong>{p.name}</strong><small>{p.source === "captain" ? "Captain primary" : "Sansekai fallback"}</small></div>
+          <div className="audit-actions-v2">
+            <Link href={`/provider/${p.slug}`}>Buka provider</Link>
+            <AuditCheck slug={p.slug}/>
+          </div>
+        </article>)}
       </div>
     </section>
-    <nav className="mobile-nav"><Link href="/">⌂<span>Home</span></Link><Link href="/#providers">▦<span>Provider</span></Link><Link href="/#popular">⌕<span>Discover</span></Link><Link className="active" href="/audit">✓<span>Audit</span></Link></nav>
+    <div className="admin-return"><Link href="/admin">← Kembali ke Admin</Link></div>
   </div></main>
 }

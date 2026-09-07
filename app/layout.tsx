@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MonetizationScripts } from "@/components/Monetization";
 import "./globals.css";
 import "./premium.css";
+import "./audit-fixes.css";
 
 export const metadata: Metadata = {
   title: "DRACIN — Drama Pendek",
