@@ -32,9 +32,20 @@ export async function providerFetch(name: ProviderName, path: string, init?: Req
     if (name === "captain") headers.set("Cookie", `auth_token=${encodeURIComponent(provider.token)}`);
   }
 
-  return fetch(`${provider.baseUrl}${path.startsWith("/") ? path : `/${path}`}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-  });
+  const timeoutSignal = AbortSignal.timeout(10_000);
+  const signal = init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
+
+  try {
+    return await fetch(`${provider.baseUrl}${path.startsWith("/") ? path : `/${path}`}`, {
+      ...init,
+      headers,
+      signal,
+      cache: "no-store",
+    });
+  } catch (error) {
+    if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
+      throw new Error(`Provider ${name} terlalu lama merespons. Silakan coba lagi.`);
+    }
+    throw error;
+  }
 }
